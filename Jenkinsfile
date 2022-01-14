@@ -1,5 +1,5 @@
 pipeline {
-	agent none
+	 agent { dockerfile true }
 
 	triggers {
 		pollSCM 'H/10 * * * *'
@@ -11,16 +11,18 @@ pipeline {
 	}
 
 	stages {
-		stage("test: baseline (jdk8)") {
-			agent {
-				docker {
-					image 'adoptopenjdk/openjdk8:latest'
-					args '-v $HOME/.m2:/tmp/jenkins-home/.m2'
-				}
-			}
-			options { timeout(time: 30, unit: 'MINUTES') }
+		stage ("Build"){
 			steps {
-				sh 'test/run.sh'
+				mvn clean install
+			}
+		}
+		stage("dockerImageBuild") {
+			steps {
+				sh '''
+				docker build -t springboot:${BUILD_NUMBER} . 
+				docker tag springboot:${BUILD_NUMBER} jenkins-demo:latest 
+				docker images
+				'''
 			}
 		}
 
